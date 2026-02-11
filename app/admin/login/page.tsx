@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "@/lib/firebase";
+import { getFirebaseAuth } from "@/lib/firebase";
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -17,7 +17,7 @@ export default function AdminLoginPage() {
     setError("");
     setLoading(true);
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithEmailAndPassword(getFirebaseAuth(), email, password);
       const token = await userCredential.user.getIdToken();
       // Set session cookie for middleware
       document.cookie = `__session=${token}; path=/; max-age=3600; SameSite=Lax`;

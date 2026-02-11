@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { signOut } from "firebase/auth";
-import { auth } from "@/lib/firebase";
+import { getFirebaseAuth } from "@/lib/firebase";
 import {
   LayoutDashboard,
   FileText,
@@ -30,7 +30,7 @@ export default function AdminDashboardLayout({
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   async function handleLogout() {
-    await signOut(auth);
+    await signOut(getFirebaseAuth());
     document.cookie = "__session=; path=/; max-age=0";
     router.push("/admin/login");
   }

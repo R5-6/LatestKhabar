@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { storage } from "@/lib/firebase";
+import { getFirebaseStorage } from "@/lib/firebase";
 import {
   createArticle,
   updateArticle,
@@ -51,7 +51,7 @@ export function ArticleForm({ article }: ArticleFormProps) {
     setUploading(true);
     try {
       const fileRef = ref(
-        storage,
+        getFirebaseStorage(),
         `articles/${Date.now()}-${file.name}`
       );
       await uploadBytes(fileRef, file);

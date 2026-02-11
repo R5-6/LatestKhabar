@@ -1,7 +1,7 @@
-import { initializeApp, getApps, getApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
-import { getStorage } from "firebase/storage";
+import { initializeApp, getApps, getApp, type FirebaseApp } from "firebase/app";
+import { getAuth, type Auth } from "firebase/auth";
+import { getFirestore, type Firestore } from "firebase/firestore";
+import { getStorage, type FirebaseStorage } from "firebase/storage";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -12,9 +12,36 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
-const auth = getAuth(app);
-const db = getFirestore(app);
-const storage = getStorage(app);
+let _app: FirebaseApp | null = null;
+let _auth: Auth | null = null;
+let _db: Firestore | null = null;
+let _storage: FirebaseStorage | null = null;
 
-export { app, auth, db, storage };
+function getFirebaseApp(): FirebaseApp {
+  if (_app) return _app;
+  _app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+  return _app;
+}
+
+export function getFirebaseAuth(): Auth {
+  if (_auth) return _auth;
+  _auth = getAuth(getFirebaseApp());
+  return _auth;
+}
+
+export function getFirebaseDb(): Firestore {
+  if (_db) return _db;
+  _db = getFirestore(getFirebaseApp());
+  return _db;
+}
+
+export function getFirebaseStorage(): FirebaseStorage {
+  if (_storage) return _storage;
+  _storage = getStorage(getFirebaseApp());
+  return _storage;
+}
+
+// Convenience aliases for backward compatibility
+export const auth = typeof window !== "undefined" ? getFirebaseAuth() : (null as unknown as Auth);
+export const db = typeof window !== "undefined" ? getFirebaseDb() : (null as unknown as Firestore);
+export const storage = typeof window !== "undefined" ? getFirebaseStorage() : (null as unknown as FirebaseStorage);
