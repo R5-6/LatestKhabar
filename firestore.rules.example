@@ -1,0 +1,112 @@
+// =============================================================
+// Firestore Security Rules for Latest Khabar
+// =============================================================
+//
+// HOW TO APPLY:
+// 1. Go to Firebase Console > Firestore > Rules tab
+// 2. Copy-paste these rules
+// 3. Click "Publish"
+//
+// DO NOT apply automatically from code.
+// Always review and test in Firebase Console first.
+// =============================================================
+
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // -------------------------------------------------------
+    // Helper functions
+    // -------------------------------------------------------
+
+    // Check if the user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Check if the authenticated user has admin role
+    function isAdmin() {
+      return isAuthenticated()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin";
+    }
+
+    // Check if the authenticated user has admin or editor role
+    function isAdminOrEditor() {
+      return isAuthenticated()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ["admin", "editor"];
+    }
+
+    // Check if user is accessing their own document
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // -------------------------------------------------------
+    // Articles collection
+    // -------------------------------------------------------
+    match /articles/{articleId} {
+      // Anyone can read published articles
+      allow read: if true;
+
+      // Only admins can create, update, or delete articles
+      allow create: if isAdmin();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // -------------------------------------------------------
+    // Users collection (admin user profiles)
+    // -------------------------------------------------------
+    match /users/{userId} {
+      // Users can read their own profile
+      allow read: if isOwner(userId);
+
+      // Admins can read any user profile
+      allow read: if isAdmin();
+
+      // Users can update their own profile (except role field)
+      allow update: if isOwner(userId)
+        && !("role" in request.resource.data)
+        || (request.resource.data.role == resource.data.role);
+
+      // Only admins can create or delete user profiles
+      allow create: if isAdmin();
+      allow delete: if isAdmin();
+
+      // Only admins can change user roles
+      allow update: if isAdmin();
+    }
+
+    // -------------------------------------------------------
+    // Categories collection (if used separately)
+    // -------------------------------------------------------
+    match /categories/{categoryId} {
+      // Anyone can read categories
+      allow read: if true;
+
+      // Only admins can write categories
+      allow write: if isAdmin();
+    }
+
+    // -------------------------------------------------------
+    // Newsletter subscriptions
+    // -------------------------------------------------------
+    match /newsletter/{subscriptionId} {
+      // Anyone can subscribe (create)
+      allow create: if true;
+
+      // Only admins can read or manage subscriptions
+      allow read, update, delete: if isAdmin();
+    }
+
+    // -------------------------------------------------------
+    // Default: deny all other access
+    // -------------------------------------------------------
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
